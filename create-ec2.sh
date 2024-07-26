@@ -15,7 +15,7 @@ for name in ${instances[@]}; do
     
     instance_id=$(aws ec2 run-instances --image-id ami-041e2ea9402c46c32 --instance-type $instance_type --security-group-ids sg-00fdfc2b0e8a3e6e9 --subnet-id subnet-065df3d78ec2dccbf --query 'Instances[0].InstanceId' --output text)
 
-    echo "Instance created for: $name"
+    echo "Instance created forr: $name"
 
     aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=$name
 
