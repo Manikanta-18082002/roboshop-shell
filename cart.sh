@@ -72,8 +72,8 @@ VALIDATE $? "Setup of SystemD Cart Service"
 systemctl daemon-reload &>>$LOGFILE
 VALIDATE $? "Daemon-Reloaded"
 
-systemctl enable catalogue &>>$LOGFILE
+systemctl enable cart &>>$LOGFILE
 VALIDATE $? "Enabled cart"
 
-systemctl start catalogue &>>$LOGFILE
+systemctl start cart &>>$LOGFILE
 VALIDATE $? "Starting cart"
