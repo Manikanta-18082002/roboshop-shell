@@ -8,6 +8,7 @@ R="\e[31m"
 G="\e[32m"
 Y="\e[33m"
 N="\e[0m"
+MONGO_HOST=mongodb.daws78s.online
 
 VALIDATE(){
    if [ $1 -ne 0 ]
@@ -27,56 +28,65 @@ else
     echo "You are super user."
 fi
 
-dnf module disable nodejs -y &>>$LOGFILE
-VALIDATE $? "Nodejs Disabled"
+dnf module disable nodejs -y &>> $LOGFILE
+VALIDATE $? "Disabling current nodejs"
 
-dnf module enable nodejs:20 -y &>>$LOGFILE
-VALIDATE $? "Enabled nodejs 20"
+dnf module enable nodejs:20 -y &>> $LOGFILE
+VALIDATE $? "Enabling nodejs:20"
 
-dnf install nodejs -y &>>$LOGFILE
-VALIDATE $? "Installed Nodejs"
+dnf install nodejs -y &>> $LOGFILE
+VALIDATE $? "Installing NodeJS"
 
-id roboshop &>>$LOGFILE
-if [ $? -ne]
+id roboshop &>> $LOGFILE
+if [ $? -ne 0 ]
+then
+    useradd roboshop &>> $LOGFILE
+    VALIDATE $? "Adding roboshop user"
+else
+    echo -e "roboshop user already exist...$Y SKIPPING $N"
+fi
 
-useradd roboshop &>>$LOGFILE
-VALIDATE $? "Roboshop useradded"
+rm -rf /app &>> $LOGFILE
+VALIDATE $? "clean up existing directory"
 
-mkdir /app &>>$LOGFILE
-VALIDATE $? "app directory created"
+mkdir -p /app &>> $LOGFILE
+VALIDATE $? "Creating app directory"
 
-curl -L -o /tmp/user.zip https://roboshop-builds.s3.amazonaws.com/user.zip &>>$LOGFILE
-VALIDATE $? "Downloded Application code to created directory"
+curl -o /tmp/user.zip https://roboshop-builds.s3.amazonaws.com/user.zip &>> $LOGFILE
+VALIDATE $? "downloading user application"
 
-cd /app &>>$LOGFILE
-VALIDATE $? "Iam in app directory"
+cd /app  &>> $LOGFILE
+VALIDATE $? "Moving to app directory"
 
-unzip /tmp/user.zip &>>$LOGFILE
-VALIDATE $? "Unzipping in tmp folder"
+unzip /tmp/user.zip &>> $LOGFILE
+VALIDATE $? "extracting user"
 
-cd /app &>>$LOGFILE
-VALIDATE $? "In app directory"
+npm install &>> $LOGFILE
+VALIDATE $? "Installing dependencies"
 
-npm install &>>$LOGFILE
-VALIDATE $? "Installing npm"
+cp /home/ec2-user/roboshop-shell/user.service /etc/systemd/system/user.service &>> $LOGFILE
 
-cp user.service /etc/systemd/system/user.service &>>$LOGFILE
-VALIDATE $? "Setup of SystemD user Service"
+systemctl daemon-reload &>> $LOGFILE
+VALIDATE $? "Daemon reload"
 
-systemctl daemon-reload &>>$LOGFILE
-VALIDATE $? "Daemon-Reloaded"
+systemctl enable user &>> $LOGFILE
+VALIDATE $? "Enable user"
 
-systemctl enable catalogue &>>$LOGFILE
-VALIDATE $? "Enabled user"
+systemctl start user &>> $LOGFILE
+VALIDATE $? "Start user"
 
-systemctl start catalogue &>>$LOGFILE
-VALIDATE $? "start user"
-
-cp mongo.repo /etc/yum.repos.d/mongo.repo &>>$LOGFILE
-VALIDATE $? "Copied Mongo repo"
+cp /home/ec2-user/roboshop-shell/mongo.repo /etc/yum.repos.d/mongo.repo &>> $LOGFILE
+VALIDATE $? "Copying mongo repo"
 
 dnf install -y mongodb-mongosh &>>$LOGFILE
-VALIDATE $? "Installed mongosh"
+VALIDATE $? "Installed mongo Client"
 
-mongosh --host mongodb.dawsmani.site </app/schema/catalogue.js &>>$LOGFILE
-VALIDATE $? "Loading Schema"
+SCHEMA_EXISTS=$(mongosh --host $MONGO_HOST --quiet --eval "db.getMongo().getDBNames().indexOf('users')") &>> $LOGFILE
+if [ $SCHEMA_EXISTS -lt 0 ]
+then
+    echo "Schema does not exists ... LOADING"
+    mongosh --host $MONGO_HOST </app/schema/user.js &>> $LOGFILE
+    VALIDATE $? "Loading user data"
+else
+    echo -e "schema already exists... $Y SKIPPING $N"
+fi
