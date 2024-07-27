@@ -8,6 +8,7 @@ R="\e[31m"
 G="\e[32m"
 Y="\e[33m"
 N="\e[0m"
+MYSQL_HOST=mysql.dawsmani.site
 
 VALIDATE(){
    if [ $1 -ne 0 ]
@@ -27,38 +28,64 @@ else
     echo "You are super user."
 fi
 
-dnf install maven -y
 
-useradd roboshop
+dnf install maven -y &>> $LOGFILE
+VALIDATE $? "Installing Maven"
 
-mkdir /app
+id roboshop &>> $LOGFILE
+if [ $? -ne 0 ]
+then
+    useradd roboshop &>> $LOGFILE
+    VALIDATE $? "Adding roboshop user"
+else
+    echo -e "roboshop user already exist...$Y SKIPPING $N"
+fi
 
-curl -L -o /tmp/shipping.zip https://roboshop-builds.s3.amazonaws.com/shipping.zip
+rm -rf /app &>> $LOGFILE
+VALIDATE $? "clean up existing directory"
 
-cd /app
+mkdir -p /app &>> $LOGFILE
+VALIDATE $? "Creating app directory"
 
-unzip /tmp/shipping.zip
+curl -L -o /tmp/shipping.zip https://roboshop-builds.s3.amazonaws.com/shipping.zip &>> $LOGFILE
+VALIDATE $? "Downloading shipping application"
 
-mvn clean package
+cd /app  &>> $LOGFILE
+VALIDATE $? "Moving to app directory"
 
-mv target/shipping-1.0.jar shipping.jar
+unzip /tmp/shipping.zip &>> $LOGFILE
+VALIDATE $? "Extracting shipping application"
 
-mv shipping.service /etc/systemd/system/shipping.service
+mvn clean package &>> $LOGFILE
+VALIDATE $? "Packaging shipping"
 
-systemctl daemon-reload
+mv target/shipping-1.0.jar shipping.jar &>> $LOGFILE
+VALIDATE $? "Renaming the artifact"
 
-systemctl enable shipping 
+cp /home/ec2-user/roboshop-shell/shipping.service /etc/systemd/system/shipping.service &>> $LOGFILE
+VALIDATE $? "Copying service file"
 
-systemctl start shipping
+systemctl daemon-reload &>> $LOGFILE
+VALIDATE $? "Daemon reload"
 
-dnf install mysql -y
+systemctl enable shipping  &>> $LOGFILE
+VALIDATE $? "Enabling shipping"
 
-mysql -h mysql.dawsmani.site -uroot -pRoboShop@1 < /app/schema/shipping.sql 
+systemctl start shipping &>> $LOGFILE
+VALIDATE $? "Starting shipping"
+
+dnf install mysql -y &>> $LOGFILE
+VALIDATE $? "Installing MySQL"
+
+mysql -h $MYSQL_HOST -uroot -pRoboShop@1 -e "use cities" &>> $LOGFILE
+if [ $? -ne 0 ]
+then
+    echo "Schema is ... LOADING"
+    mysql -h $MYSQL_HOST -uroot -pRoboShop@1 < /app/schema/shipping.sql &>> $LOGFILE
+    VALIDATE $? "Loading schema"
+else
+    echo -e "Schema already exists... $Y SKIPPING $N"
+fi
 
 systemctl restart shipping
-
-# There is some issue with the shipping.sql schema file. Here is the solution for the same:
-# Please replace line 26 with these 3 lines in your /app/schema/shipping.sql file
-#   CREATE USER IF NOT EXISTS 'shipping'@'%' IDENTIFIED WITH mysql_native_password BY 'RoboShop@1';
-#   GRANT ALL ON cities.* TO 'shipping'@'%';
-#   FLUSH PRIVILEGES;
+VALIDATE $? "Restarted Shipping"
