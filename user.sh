@@ -78,10 +78,11 @@ VALIDATE $? "Start user"
 cp /home/ec2-user/roboshop-shell/mongo.repo /etc/yum.repos.d/mongo.repo &>> $LOGFILE
 VALIDATE $? "Copying mongo repo"
 
-dnf install -y mongodb-mongosh &>>$LOGFILE
-VALIDATE $? "Installed mongo Client"
+dnf install -y mongodb-mongosh &>> $LOGFILE
+VALIDATE $? "Installing mongo client"
 
 SCHEMA_EXISTS=$(mongosh --host $MONGO_HOST --quiet --eval "db.getMongo().getDBNames().indexOf('users')") &>> $LOGFILE
+
 if [ $SCHEMA_EXISTS -lt 0 ]
 then
     echo "Schema does not exists ... LOADING"
