@@ -54,7 +54,7 @@ mkdir -p /app &>>$LOGFILE # -p: if not exist create else skip
 VALIDATE $? "app directory created"
 
 curl -o /tmp/catalogue.zip https://roboshop-builds.s3.amazonaws.com/catalogue.zip &>>$LOGFILE
-VALIDATE $? "Downloded Application code to created directory"
+VALIDATE $? "Downloded Application code"
 
 cd /app &>>$LOGFILE
 VALIDATE $? "Iam in app directory"
