@@ -37,14 +37,15 @@ VALIDATE $? "Enabled nodejs 20"
 dnf install nodejs -y &>>$LOGFILE
 VALIDATE $? "Installing Nodejs"
 
-id roboshop &>>$LOGFILE
-if [$? -ne 0]
-then 
-    useradd roboshop &>>$LOGFILE
-    VALIDATE $? "Roboshop useradded"
+id roboshop &>> $LOGFILE
+if [ $? -ne 0 ]
+then
+    useradd roboshop &>> $LOGFILE
+    VALIDATE $? "Adding roboshop user"
 else
-    echo -e  "user already exists....$Y SKIPPING  $N"
+    echo -e "Roboshop user already exist...$Y SKIPPING $N"
 fi
+
 
 rm -rf /app &>>$LOGFILE
 VALIDATE $? "Clean up existing library"
@@ -88,10 +89,10 @@ VALIDATE $? "Installed mongo Client"
 SCHEMA_EXISTS=$(mongosh --host $MONGO_HOST --quiet --eval "db.getMongo().getDBNames().indexOf('catalogue')") &>> $LOGFILE
 
 if [ $SCHEMA_EXISTS -lt 0 ] # -1: not there 0: exists
-then 
+then
     echo "Schema does not exists ... LOADING"
     mongosh --host $MONGO_HOST </app/schema/catalogue.js &>> $LOGFILE
     VALIDATE $? "Loading catalogue data"
 else
-    echo -e "schema already exists... $Y SKIPPING $N"
+    echo -e "Schema already exists... $Y SKIPPING $N"
 fi
