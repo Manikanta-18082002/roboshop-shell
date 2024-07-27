@@ -52,5 +52,5 @@ VALIDATE $? "Extracting web application"
 cp /home/ec2-user/roboshop-shell/roboshop.conf /etc/nginx/default.d/roboshop.conf  &>>$LOGFILE
 VALIDATE $? "copying roboshop conf"
 
-systemctl restart nginx &>>$LOGFILE
+sudo systemctl restart nginx &>>$LOGFILE
 VALIDATE $? "Restarting Nginx"

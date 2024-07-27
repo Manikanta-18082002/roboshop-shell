@@ -87,5 +87,5 @@ else
     echo -e "Schema already exists... $Y SKIPPING $N"
 fi
 
-systemctl restart shipping
+sudo systemctl restart shipping
 VALIDATE $? "Restarted Shipping"
